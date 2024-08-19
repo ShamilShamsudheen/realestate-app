@@ -1,12 +1,15 @@
 require('dotenv').config()
 const express = require('express');
+const cors = require('cors')
 const fs = require('fs');
 const path = require('path');
 const DxfParser = require('dxf-parser');
 const geojson = require('geojson');
 
 const app = express();
+app.use(cors());
 const port = process.env.PORT || 3001; // change the port if needed
+const inputFilePath = process.env.DXF_FILE_PATH; // DXF file path
 
 // Function to convert DXF entities to GeoJSON 
 function dxfToGeoJSON(dxfData) {
@@ -50,7 +53,6 @@ function dxfToGeoJSON(dxfData) {
 
 // Route to handle DXF to GeoJSON conversion
 app.get('/getfile', (req, res) => {
-    const inputFilePath = process.env.DXF_FILE_PATH; // DXF file path
 
     const parser = new DxfParser();
     fs.readFile(inputFilePath, 'utf-8', (err, data) => {
