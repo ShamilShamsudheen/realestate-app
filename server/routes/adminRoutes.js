@@ -153,4 +153,47 @@ router.get('/data', (req, res) => {
     });
 });
 
+// Sub-plot details 
+router.get('/plots/:filename', (req, res) => {
+    const {filename} = req.params;
+    console.log( filename ,'jjafkljdsklksad')
+    fs.readFile(path.join(uploadsDir, `${filename}`), 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).send('Error reading file');
+        }
+
+        const geojson = JSON.parse(data);
+        console.log(geojson,'format sended from');
+        
+        const plot = geojson
+
+        if (!plot) {
+            return res.status(404).send('Plot not found');
+        }
+
+        res.json(plot); // Return plot details (properties)
+    });
+});
+
+// Plot details 
+router.get('/plots/:filename/:index', (req, res) => {
+    const { index ,filename} = req.params;
+    console.log(index ,filename ,'jjafkljdsklksad')
+    fs.readFile(path.join(uploadsDir, `${filename}`), 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).send('Error reading file');
+        }
+
+        const geojson = JSON.parse(data);
+        const plot = geojson.features.find((feature, i) => i === parseInt(index));
+
+        if (!plot) {
+            return res.status(404).send('Plot not found');
+        }
+
+        res.json(plot); // Return plot details (properties)
+    });
+});
+
+
 module.exports = router;

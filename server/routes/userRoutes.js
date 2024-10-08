@@ -5,47 +5,7 @@ const path = require('path')
 
 // Path to the uploads folder
 const uploadsDir = path.join(__dirname, '../uploads');
-
-// Fetch all GeoJSON files and send their combined content
-// router.get('/api/geojson', (req, res) => {
-//     fs.readdir(uploadsDir, (err, files) => {
-//         if (err) {
-//             console.error('Error reading directory:', err);
-//             return res.status(500).send('Error reading directory');
-//         }
-
-//         // Filter only .geojson files
-//         const geojsonFiles = files.filter(file => file.endsWith('.geojson'));
-
-//         // Read the contents of each file and combine them
-//         const fileReadPromises = geojsonFiles.map(file => {
-//             return new Promise((resolve, reject) => {
-//                 fs.readFile(path.join(uploadsDir, file), 'utf8', (err, data) => {
-//                     if (err) {
-//                         reject(err);
-//                     } else {
-//                         resolve(JSON.parse(data)); // Directly resolve with the parsed GeoJSON content
-//                     }
-//                 });
-//             });
-//         });
-
-//         // Send combined GeoJSON content
-//         Promise.all(fileReadPromises)
-//             .then(geojsonContents => {
-//                 // Merge all geojson contents into a single FeatureCollection if needed
-//                 const mergedGeoJSON = {
-//                     type: 'FeatureCollection',
-//                     features: geojsonContents.flatMap(content => content.features)
-//                 };
-//                 res.json(mergedGeoJSON); // Send combined GeoJSON content in response
-//             })
-//             .catch(err => {
-//                 console.error('Error reading file content:', err);
-//                 res.status(500).send('Error reading file content');
-//             });
-//     });
-// });
+ 
 router.get('/api/geojson-files', (req, res) => {
     fs.readdir(uploadsDir, (err, files) => {
         if (err) {
@@ -79,7 +39,27 @@ router.get('/api/geojson/:filename', (req, res) => {
     });
 });
 
+// Plot details 
+router.get('/api/plots/:filename/:index', (req, res) => {
+    const { index ,filename} = req.params;
+    console.log(index ,filename ,'jjafkljdsklksad')
+    fs.readFile(path.join(uploadsDir, `${filename}`), 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).send('Error reading file');
+        }
+
+        const geojson = JSON.parse(data);
+        const plot = geojson.features.find((feature, i) => i === parseInt(index));
+        console.log(plot,'file datas');
+        
+        if (!plot) {
+            return res.status(404).send('Plot not found');
+        }
+
+        res.json(plot); // Return plot details (properties)
+    });
+});
+
 module.exports = router;
 
 
-module.exports = router;

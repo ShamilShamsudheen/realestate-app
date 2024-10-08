@@ -1,143 +1,15 @@
-// import React, { useEffect, useRef } from 'react';
-// import mapboxgl from 'mapbox-gl';
-// import 'mapbox-gl/dist/mapbox-gl.css';
-// import { handleGeoJsonData } from '../Constant/Constant.js';
-
-// mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
-
-// const MapComponent = ({ plotData }) => {
-//     const mapContainerRef = useRef(null);
-//     const mapRef = useRef(null);
-
-//     useEffect(() => {
-//         if (plotData && plotData.features && plotData.features.length > 0) {
-//             // Convert coordinates
-//             const convertedData = handleGeoJsonData(plotData.features);
-
-//             console.log('Converted Data:', convertedData); // Debugging log
-
-//             // Initialize the map
-//             mapRef.current = new mapboxgl.Map({
-//                 container: mapContainerRef.current,
-//                 style: 'mapbox://styles/mapbox/streets-v12',
-//                 pitch: 45,
-//                 bearing: -17.6,
-//             });
-
-//             mapRef.current.on('load', () => {
-//                 try {
-//                     // Add data source
-//                     mapRef.current.addSource('plot-data', {
-//                         type: 'geojson',
-//                         data: {
-//                             type: 'FeatureCollection',
-//                             features: convertedData
-//                         }
-//                     });
-
-//                     // Add layers for different geometry types
-//                     mapRef.current.addLayer({
-//                         id: 'polygon-fill',
-//                         type: 'fill',
-//                         source: 'plot-data',
-//                         paint: {
-//                             'fill-color': '#888888',
-//                             'fill-opacity': 0.4
-//                         },
-//                         filter: ['==', '$type', 'Polygon']
-//                     });
-
-//                     mapRef.current.addLayer({
-//                         id: 'polygon-line',
-//                         type: 'line',
-//                         source: 'plot-data',
-//                         paint: {
-//                             'line-width': 2,
-//                             'line-color': '#4264fb'
-//                         },
-//                         filter: ['==', '$type', 'Polygon']
-//                     });
-
-//                     mapRef.current.addLayer({
-//                         id: 'line-layer',
-//                         type: 'line',
-//                         source: 'plot-data',
-//                         paint: {
-//                             'line-width': 2,
-//                             'line-color': '#ff69b4'
-//                         },
-//                         filter: ['==', '$type', 'LineString']
-//                     });
-
-//                     mapRef.current.addLayer({
-//                         id: 'point-layer',
-//                         type: 'circle',
-//                         source: 'plot-data',
-//                         paint: {
-//                             'circle-radius': 6,
-//                             'circle-color': '#ff4500'
-//                         },
-//                         filter: ['==', '$type', 'Point']
-//                     });
-
-//                     // Calculate bounds and fit the map
-//                     const bounds = new mapboxgl.LngLatBounds();
-
-//                     convertedData.forEach((feature) => {
-//                         let coords = feature.geometry.coordinates;
-
-//                         if (feature.geometry.type === 'Point') {
-//                             bounds.extend(coords);
-//                         } else if (feature.geometry.type === 'LineString' || feature.geometry.type === 'Polygon') {
-//                             coords.forEach(coord => bounds.extend(coord));
-//                         } else if (feature.geometry.type === 'MultiLineString' || feature.geometry.type === 'MultiPolygon') {
-//                             coords.flat(1).forEach(coord => bounds.extend(coord));
-//                         }
-//                     });
-
-//                     if (bounds.isEmpty()) {
-//                         console.error('Bounds calculation failed: No valid coordinates found.');
-//                     } else {
-//                         mapRef.current.fitBounds(bounds, {
-//                             padding: 10,
-//                             maxZoom: 16
-//                         });
-//                     }
-
-//                 } catch (error) {
-//                     console.error('Error adding source or layer:', error);
-//                 }
-//             });
-//         }
-
-//         return () => {
-//             if (mapRef.current) {
-//                 mapRef.current.remove();
-//             }
-//         };
-//     }, [plotData]);
-
-//     return (
-//         <div
-//             style={{ height: '100%' }}
-//             ref={mapContainerRef}
-//             className="map-container"
-//         />
-//     );
-// };
-
-// export default MapComponent;
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { useNavigate } from 'react-router-dom';
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
-const MapComponent = ({ plotData }) => {
-    // console.log(plotData,"plotdata");
-    
+const MapComponent = ({ plotData ,filename}) => {
     const mapContainerRef = useRef(null);
     const mapRef = useRef(null);
+    const navigate = useNavigate(); // Use navigate to redirect on plot click
+
 
     const sanitizeCoordinates = (coordinates) => {
         return coordinates.map(coord => {
@@ -150,11 +22,9 @@ const MapComponent = ({ plotData }) => {
             }
         });
     };
-    
-      useEffect(() => {
-        const dataToUse = plotData;
-        
-        if (dataToUse && dataToUse.features && dataToUse.features.length > 0) {
+
+    useEffect(() => {
+        if (plotData && plotData.features && plotData.features.length > 0) {
             if (!mapRef.current) {
                 mapRef.current = new mapboxgl.Map({
                     container: mapContainerRef.current,
@@ -165,91 +35,112 @@ const MapComponent = ({ plotData }) => {
                     zoom: 2
                 });
             }
-    
+
             const map = mapRef.current;
-    
+
             map.on('load', () => {
-                try {
-                    const sanitizedPlotData = {
-                        ...dataToUse,
-                        features: dataToUse.features.map(feature => ({
-                            ...feature,
-                            geometry: {
-                                ...feature.geometry,
-                                coordinates: sanitizeCoordinates(feature.geometry.coordinates)
-                            }
-                        }))
-                    };
-    
-                    map.addSource('plot-data', {
-                        type: 'geojson',
-                        data: sanitizedPlotData
-                    });
-    
-                    map.addLayer({
-                        id: 'point-layer',
-                        type: 'circle',
-                        source: 'plot-data',
-                        paint: {
-                            'circle-radius': 6,
-                            'circle-color': '#ff4500'
+                // Add index to each plot's properties
+                const sanitizedPlotData = {
+                    ...plotData,
+                    features: plotData.features.map((feature, index) => ({
+                        ...feature,
+                        properties: {
+                            ...feature.properties,
+                            index: index // Add the plot index
                         },
-                        filter: ['==', '$type', 'Point']
-                    });
-    
-                    map.addLayer({
-                        id: 'line-layer',
-                        type: 'line',
-                        source: 'plot-data',
-                        paint: {
-                            'line-color': '#4a4443',
-                            'line-width': 1
-                        },
-                        filter: ['in', '$type', 'LineString']
-                    });
-    
-                    map.addLayer({
-                        id: 'polygon-layer',
-                        type: 'fill',
-                        source: 'plot-data',
-                        paint: {
-                            'fill-color': '#b5b3ae',
-                            'fill-opacity': 0.8,
-                            'fill-outline-color': '#000000'
-                        },
-                        filter: ['in', '$type', 'Polygon']
-                    });
-    
-                    const bounds = new mapboxgl.LngLatBounds();
-                    sanitizedPlotData.features.forEach((feature) => {
-                        let coords = feature.geometry.coordinates;
-                        if (feature.geometry.type === 'Point') {
-                            bounds.extend(coords);
-                        } else if (feature.geometry.type === 'LineString' || feature.geometry.type === 'Polygon') {
-                            coords.forEach(coord => bounds.extend(coord));
-                        } else if (feature.geometry.type === 'MultiLineString' || feature.geometry.type === 'MultiPolygon') {
-                            coords.flat(1).forEach(coord => bounds.extend(coord));
+                        geometry: {
+                            ...feature.geometry,
+                            coordinates: sanitizeCoordinates(feature.geometry.coordinates)
                         }
-                    });
-    
-                    if (!bounds.isEmpty()) {
-                        map.fitBounds(bounds, {
-                            padding: 10,
-                            maxZoom: 16
-                        });
-                    } else {
-                        console.error('Bounds calculation failed: No valid coordinates found.');
+                    }))
+                };
+
+                // Add the data source for subplots
+                map.addSource('plot-data', {
+                    type: 'geojson',
+                    data: sanitizedPlotData
+                });
+
+                // Add the subplot (polygon) layer
+                map.addLayer({
+                    id: 'polygon-layer',
+                    type: 'fill',
+                    source: 'plot-data',
+                    paint: {
+                        'fill-color': '#b5b3ae',
+                        'fill-opacity': 0.8,
+                        'fill-outline-color': '#000000'
+                    },
+                    filter: ['in', '$type', 'Polygon']
+                });
+
+                // Hover effect: Change color of subplot on hover
+                map.on('mouseenter', 'polygon-layer', (e) => {
+                    map.getCanvas().style.cursor = 'pointer';
+
+                    // Change color on hover
+                    map.setPaintProperty('polygon-layer', 'fill-color', [
+                        'case',
+                        ['==', ['get', 'index'], e.features[0].properties.index],
+                        '#64e336',  // Hover color
+                        '#b5b3ae'  // Default color
+                    ]);
+                });
+
+                // Reset color when mouse leaves the polygon
+                map.on('mouseleave', 'polygon-layer', () => {
+                    map.getCanvas().style.cursor = '';
+                    map.setPaintProperty('polygon-layer', 'fill-color', '#b5b3ae');
+                });
+
+                // Optional: Show a popup on hover
+                const popup = new mapboxgl.Popup({
+                    closeButton: false,
+                    closeOnClick: false
+                });
+
+                map.on('mousemove', 'polygon-layer', (e) => {
+                    const feature = e.features[0];
+                    const index = feature.properties.index;
+
+                    // Show index on hover
+                    popup.setLngLat(e.lngLat)
+                        .setHTML(`<strong>Plot Index: ${index}</strong>`)
+                        .addTo(map);
+                });
+
+                map.on('click', 'polygon-layer', (e) => {
+                    const feature = e.features[0];
+                    const index = feature.properties.index;
+
+                    // Navigate to the PlotDetails component with the index passed
+                    navigate(`/plot-details/${filename}/${index}`);
+                });
+
+                map.on('mouseleave', 'polygon-layer', () => {
+                    popup.remove();
+                });
+
+                // Fit the bounds to the plot data
+                const bounds = new mapboxgl.LngLatBounds();
+                sanitizedPlotData.features.forEach((feature) => {
+                    const coords = feature.geometry.coordinates;
+                    if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+                        coords.flat(1).forEach(coord => bounds.extend(coord));
                     }
-    
-                } catch (error) {
-                    console.error('Error adding source or layer:', error);
+                });
+
+                if (!bounds.isEmpty()) {
+                    map.fitBounds(bounds, {
+                        padding: 10,
+                        maxZoom: 16
+                    });
+                } else {
+                    console.error('Bounds calculation failed: No valid coordinates found.');
                 }
             });
-    
-        } else {
-            console.warn('No plot data available or plot data has no features.');
         }
-    
+
         return () => {
             if (mapRef.current) {
                 mapRef.current.remove();
@@ -257,7 +148,6 @@ const MapComponent = ({ plotData }) => {
             }
         };
     }, [plotData]);
-    
 
     return (
         <div
