@@ -71,6 +71,34 @@ const processZipFile = async (filePath) => {
 };
 
 // POST route to upload and process .geojson, .kml, or .zip files
+// router.post('/upload', upload.single('geojsonFile'), async (req, res) => {
+//     if (!req.file) {
+//         return res.status(400).send('No file uploaded or invalid file type.');
+//     }
+
+//     const filePath = path.join(uploadsDir, req.file.filename);
+//     const ext = path.extname(req.file.originalname).toLowerCase();
+
+//     try {
+//         let geojsonData;
+
+//         if (ext === '.zip') {
+//             // Process ZIP file with Shapefiles
+//             geojsonData = await processZipFile(filePath);
+//             const geojsonFilePath = path.join(uploadsDir, `${path.basename(filePath, '.zip')}.geojson`);
+//             fs.writeFileSync(geojsonFilePath, JSON.stringify(geojsonData));
+//             res.status(200).json({ message: 'ZIP file uploaded, converted to GeoJSON, and stored successfully!', geojsonData });
+//         } else {
+//             // Process .geojson or .kml file
+//             geojsonData = processFile(filePath);
+//             res.status(200).json({ message: 'File uploaded and processed successfully!', geojsonData });
+//         }
+//     } catch (error) {
+//         console.error('Error processing file:', error);
+//         res.status(500).send('Error processing file');
+//     }
+// });
+// POST route to upload and process .geojson or .zip files
 router.post('/upload', upload.single('geojsonFile'), async (req, res) => {
     if (!req.file) {
         return res.status(400).send('No file uploaded or invalid file type.');
@@ -85,37 +113,68 @@ router.post('/upload', upload.single('geojsonFile'), async (req, res) => {
         if (ext === '.zip') {
             // Process ZIP file with Shapefiles
             geojsonData = await processZipFile(filePath);
-            const geojsonFilePath = path.join(uploadsDir, `${path.basename(filePath, '.zip')}.geojson`);
-            fs.writeFileSync(geojsonFilePath, JSON.stringify(geojsonData));
-            res.status(200).json({ message: 'ZIP file uploaded, converted to GeoJSON, and stored successfully!', geojsonData });
         } else {
-            // Process .geojson or .kml file
+            // Process .geojson file
             geojsonData = processFile(filePath);
-            res.status(200).json({ message: 'File uploaded and processed successfully!', geojsonData });
         }
+
+        // Generate the new filename for the updated GeoJSON file
+        const geojsonFileName = `${path.basename(filePath, ext)}_updated.geojson`;
+
+        // Add top-level plotInfo field, including the new filename
+
+        geojsonData.plotInfo = {
+            filename: geojsonFileName,        // Assign the new file's name to plotInfo
+            plotName: 'Plot A',               // Dynamic or static value for plotName
+            plotStatus: true                  // Dynamic or static value for plotStatus
+        };
+
+        // Modify each feature's properties field
+        geojsonData.features = geojsonData.features.map((feature, i) => {
+            // Ensure properties field exists
+            feature.properties = feature.properties || {};
+
+            // Add additional fields to each feature's properties
+            feature.properties.subplotName = `Subplot ${i + 1}`;  // Dynamic subplot name
+            feature.properties.subPlotStatus = 'Available';       // Set status as per your logic
+            feature.properties.subPlotPrice = 10000 + i * 500;    // Example: Set price based on index
+
+            return feature;
+        });
+
+        // Save the modified GeoJSON data back to the file system with the new filename
+        const geojsonFilePath = path.join(uploadsDir, geojsonFileName);
+        fs.writeFileSync(geojsonFilePath, JSON.stringify(geojsonData, null, 2)); // Pretty print JSON
+
+        res.status(200).json({
+            message: 'File uploaded, modified, and saved successfully!',
+            geojsonData
+        });
     } catch (error) {
         console.error('Error processing file:', error);
         res.status(500).send('Error processing file');
     }
 });
 
-// Utility function to convert KML to GeoJSON
-const convertKMLToGeoJSON = (kmlContent) => {
-    const parser = new DOMParser();
-    const kmlDom = parser.parseFromString(kmlContent, 'text/xml');
-    return toGeoJSON.kml(kmlDom);
-};
 
-// Process a single file (.geojson or .kml)
-const processFile = (filePath) => {
-    const ext = path.extname(filePath).toLowerCase();
-    if (ext === '.geojson') {
-        return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    } else if (ext === '.kml') {
-        const kmlContent = fs.readFileSync(filePath, 'utf8');
-        return convertKMLToGeoJSON(kmlContent);
-    }
-};
+
+// // Utility function to convert KML to GeoJSON
+// const convertKMLToGeoJSON = (kmlContent) => {
+//     const parser = new DOMParser();
+//     const kmlDom = parser.parseFromString(kmlContent, 'text/xml');
+//     return toGeoJSON.kml(kmlDom);
+// };
+
+// // Process a single file (.geojson or .kml)
+// const processFile = (filePath) => {
+//     const ext = path.extname(filePath).toLowerCase();
+//     if (ext === '.geojson') {
+//         return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+//     } else if (ext === '.kml') {
+//         const kmlContent = fs.readFileSync(filePath, 'utf8');
+//         return convertKMLToGeoJSON(kmlContent);
+//     }
+// };
 
 // GET route to fetch all .geojson files and their contents
 router.get('/data', (req, res) => {
@@ -163,7 +222,7 @@ router.get('/plots/:filename', (req, res) => {
         }
 
         const geojson = JSON.parse(data);
-        console.log(geojson,'format sended from');
+        console.log(geojson.properties,'format sended from');
         
         const plot = geojson
 

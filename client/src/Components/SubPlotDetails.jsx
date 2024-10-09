@@ -54,9 +54,9 @@ const SubPlotDetails = () => {
                 <tbody>
                     {plotDetails.features.map((feature, index) => (
                         <tr key={index}>
-                            <td className="px-4 py-2 border-b">{index}</td>
-                            <td className="px-4 py-2 border-b">{feature.properties.name || "N/A"}</td>
-                            <td className="px-4 py-2 border-b">{feature.properties.status || "N/A"}</td>
+                            <td className="px-4 py-2 border-b">{index + 1}</td>
+                            <td className="px-4 py-2 border-b font-bold">{feature.properties.subplotName || "N/A"}</td>
+                            <td className="px-4 py-2 border-b">{feature.properties.subPlotStatus || "N/A"}</td>
                             <td className="px-4 py-2 border-b">
                             <button
                                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700"

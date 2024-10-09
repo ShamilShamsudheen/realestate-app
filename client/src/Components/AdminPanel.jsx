@@ -23,6 +23,8 @@ export const AdminPanel = () => {
                     const response = await axios.get(`${process.env.REACT_APP_API_URL}admin/data`);
                     const files = response.data.files || [];
                     setPlotData(files);  // Set plot data
+                    console.log(files);
+
                 } catch (error) {
                     console.error('Error fetching plot data:', error.message);
                 }
@@ -38,7 +40,10 @@ export const AdminPanel = () => {
     };
 
     const handleViewClick = (file) => {
-        setSelectedPlot(file.content); // Set the selected plot data for the map
+        setSelectedPlot(file.content);
+        console.log(file.content.plotInfo);
+
+        // Set the selected plot data for the map
         setShowMapModal(true); // Show the map modal
     };
 
@@ -51,6 +56,9 @@ export const AdminPanel = () => {
     };
     const handleDetailsClick = (filename) => {
         navigate(`/admin/plot-details/${filename}`)
+    }
+    const handlePlotInfo = (file) => {
+
     }
 
     return (
@@ -82,9 +90,13 @@ export const AdminPanel = () => {
                             </thead>
                             <tbody>
                                 {plotData.map((file, index) => (
+
                                     <tr key={index}>
-                                        <td className="px-4 py-2 border-b">{file.filename}</td>
-                                        <td className="px-4 py-2 border-b">Status Placeholder</td> {/* Replace with real status */}
+                                        <td className="px-4 py-2 border-b">{file.content.plotInfo.plotName}</td>
+                                        <td className={`px-4 py-2 border-b ${file.content.plotInfo.plotStatus ? 'text-green-500' : 'text-red-500'}`}>
+                                            {file.content.plotInfo.plotStatus ? 'Active' : 'In-Active'}
+                                        </td>
+
                                         <td className="px-4 py-2 border-b">
                                             <button
                                                 onClick={() => handleViewClick(file)}
@@ -92,7 +104,7 @@ export const AdminPanel = () => {
                                                 View
                                             </button>
                                             <button
-                                                onClick={()=>handleDetailsClick(file.filename)}
+                                                onClick={() => handleDetailsClick(file.filename)}
                                                 className="bg-yellow-500 hover:bg-yellow-700 text-white py-1 px-3 rounded">
                                                 Details
                                             </button>
